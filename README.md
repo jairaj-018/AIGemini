@@ -1,12 +1,10 @@
-Standard Operating Procedure (SOP) for Integrating ChatGPTClone in a React Application.
+Standard Operating Procedure (SOP).
 
 
 Prerequisites:
  
-2.React Application: The target software must be a React application .
-3.API Key: You will need a valid Google Generative AI API key to connect with the model.
-
-
+1.React Application: The target software must be a React application .
+2.API Key: You will need a valid Google Generative AI API key to connect with the model.
 
 Steps for Implementation:
 
@@ -15,10 +13,10 @@ STEP 1 : Install React and Required Libraries
 run the below command 
 npm install react-markdown remark-gfm react-syntax-highlighter @google/generative-ai
 
-Step 2: Create the ChatGPTClone Component
+Step 2: Create the Clone of the Component
 
-Inside your React application, create a new file ChatGPTClone.js in the src folder.
-Copy and paste the ChatGPTClone code into the created file.
+Inside your React application, create a new file  in the src folder.
+Copy and paste the GeminiAI.jsx code into the created file.
 
 Set up API Key:
 
@@ -26,14 +24,12 @@ In the ChatGPTClone component, the API key is fetched using import.meta.env.VITE
 
 API_KEY=your_google_api_key_here
 
-
-Step 3: Integrating the Chat Component into Your Application
+Step 3: Integrating the ChatGPTClone Component into Your Application
 
 Import the ChatGPTClone Component:
 In the App.js or any other component where you want to display the chat interface, import the ChatGPTClone component:
 
 import ChatGPTClone from './ChatGPTClone';
-
 
 Step 4: Styling the Chat Interface
 
@@ -47,7 +43,6 @@ npm run dev
 
 Ensure responsiveness and any additional UI adjustments as per your project.
 
-
 Step 5: Google Generative AI API Configuration
 Integrating Google Generative AI API:
 
@@ -60,14 +55,11 @@ Verify that the chat input correctly triggers an API call and that responses are
 You can monitor network activity and API responses using browser developer tools to ensure correct interaction with the Google API.
 
 Step 6: Error Handling and Testing
+
 Error Handling:
-
 The handleSend function includes error handling that logs issues to the console and updates the chat UI if there’s a failure.
-
 Test various edge cases such as:
-
 Empty input or invalid input.
-
 API failures (e.g., incorrect API key or connectivity issues).
 
 Testing the Chat Interface:
