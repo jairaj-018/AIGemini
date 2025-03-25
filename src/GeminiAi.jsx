@@ -12,28 +12,35 @@ const ChatGPTClone = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+
   const handleSend = async () => {
     if (!input.trim()) return;
     const userMessage = { id: 0, message: input };
-    setMessages([...messages, userMessage]);
+    setMessages([
+      ...messages,
+      userMessage,
+      { id: 1, message: "Generating..." },
+    ]);
     setInput("");
     setLoading(true);
+
     try {
       const { GoogleGenerativeAI } = await import("@google/generative-ai");
       const genAI = new GoogleGenerativeAI(api_key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
       const result = await model.generateContent(input);
       const reply = result.response.text();
-      setMessages((prev) => [...prev, { id: 1, message: reply }]);
+      setMessages((prev) => [...prev.slice(0, -1), { id: 1, message: reply }]);
     } catch (error) {
       console.error("Error generating response:", error);
       setMessages((prev) => [
-        ...prev,
+        ...prev.slice(0, -1),
         { id: 1, message: ":x: Error: Could not fetch response." },
       ]);
     }
     setLoading(false);
   };
+
   return (
     <div style={styles.container}>
       <h2 style={styles.title}>Samyotech AI</h2>
@@ -62,6 +69,7 @@ const ChatGPTClone = () => {
     </div>
   );
 };
+
 const MarkdownRenderer = ({ text, isUser }) => {
   return (
     <div
@@ -81,36 +89,6 @@ const MarkdownRenderer = ({ text, isUser }) => {
         <ReactMarkdown
           remarkPlugins={[remarkGfm]}
           components={{
-            table: ({ children }) => (
-              <div style={{ overflowX: "auto", maxWidth: "100%" }}>
-                <table style={{ borderCollapse: "collapse", width: "100%" }}>
-                  {children}
-                </table>
-              </div>
-            ),
-            th: ({ children }) => (
-              <th
-                style={{
-                  border: "1px solid #ddd",
-                  padding: "8px",
-                  backgroundColor: "#F2F2F2",
-                  textAlign: "left",
-                }}
-              >
-                {children}
-              </th>
-            ),
-            td: ({ children }) => (
-              <td
-                style={{
-                  border: "1px solid #ddd",
-                  padding: "8px",
-                  textAlign: "left",
-                }}
-              >
-                {children}
-              </td>
-            ),
             code({ inline, className, children }) {
               const match = /language-(\w+)/.exec(className || "");
               return !inline && match ? (
@@ -141,6 +119,7 @@ const MarkdownRenderer = ({ text, isUser }) => {
     </div>
   );
 };
+
 const styles = {
   container: {
     width: "800px",
@@ -195,4 +174,5 @@ const styles = {
     boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
   },
 };
+
 export default ChatGPTClone;
