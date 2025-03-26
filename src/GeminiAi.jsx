@@ -3,6 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
+import { HOTEL_CRM_CONTEXT } from "./aiContext";
 
 const ChatGPTClone = () => {
   const api_key = import.meta.env.VITE_API_KEY;
@@ -28,7 +29,10 @@ const ChatGPTClone = () => {
       const { GoogleGenerativeAI } = await import("@google/generative-ai");
       const genAI = new GoogleGenerativeAI(api_key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-      const result = await model.generateContent(input);
+
+      const prompt = `${HOTEL_CRM_CONTEXT} ${input}`;
+      const result = await model.generateContent(prompt);
+
       const reply = result.response.text();
       setMessages((prev) => [...prev.slice(0, -1), { id: 1, message: reply }]);
     } catch (error) {
