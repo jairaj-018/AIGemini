@@ -4,6 +4,7 @@ import remarkGfm from "remark-gfm";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import useSpeechToText from "react-hook-speech-to-text";
+import TextToSpeech from "react-text-to-speech";
 import { HOTEL_CRM_CONTEXT } from "./aiContext";
 
 const ChatGPTClone = () => {
@@ -129,6 +130,7 @@ const MarkdownRenderer = ({ text, isUser }) => {
         >
           {text}
         </ReactMarkdown>
+        <TextToSpeech text={text} />
       </div>
     </div>
   );
