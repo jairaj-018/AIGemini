@@ -4,7 +4,8 @@ import remarkGfm from "remark-gfm";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
 import { atomOneDark } from "react-syntax-highlighter/dist/esm/styles/hljs";
 import useSpeechToText from "react-hook-speech-to-text";
-import { HOTEL_CRM_CONTEXT } from "./aiContext";
+import TextToSpeech from "react-text-to-speech";
+import { SPEAKER_CONTEXT } from "./aiContext";
 
 const ChatGPTClone = () => {
   const api_key = import.meta.env.VITE_API_KEY;
@@ -20,35 +21,28 @@ const ChatGPTClone = () => {
     startSpeechToText,
     stopSpeechToText,
     interimResult,
-    // results,
   } = useSpeechToText({ continuous: false });
 
-  // Update input field with spoken text
-  // console.log(results,"result");
-  console.log(interimResult,"interimResult");
+  // Auto-start voice recognition on load
+  useEffect(() => {
+    startSpeechToText();
+  }, []);
+
+  // Update input when speech recognition captures text
   useEffect(() => {
     if (interimResult) {
-      // setInput(interimResult || results.join(" "));
       setInput(interimResult);
-
+      stopSpeechToText(); // Stop recognition after capturing input
+      handleSend(interimResult);
     }
   }, [interimResult]);
 
-  // Handle voice input start/stop
-  const handleVoiceInput = () => {
-    if (isRecording) {
-      stopSpeechToText();
-    } else {
-      startSpeechToText();
-    }
-  };
+  const handleSend = async (text = input) => {
+    if (!text.trim()) return;
 
-  const handleSend = async () => {
-    if (!input.trim()) return;
-
-    const userMessage = { id: 0, message: input };
+    const userMessage = { id: 0, message: text };
     setMessages([...messages, userMessage, { id: 1, message: "Generating..." }]);
-    setInput(""); 
+    setInput("");
     setLoading(true);
 
     try {
@@ -56,17 +50,26 @@ const ChatGPTClone = () => {
       const genAI = new GoogleGenerativeAI(api_key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
-      const prompt = `${HOTEL_CRM_CONTEXT} ${input}`;
+      const prompt = `${SPEAKER_CONTEXT} ${text}`;
       const result = await model.generateContent(prompt);
-
       const reply = result.response.text();
+
       setMessages((prev) => [...prev.slice(0, -1), { id: 1, message: reply }]);
+
+      setTimeout(() => {
+        const speech = new SpeechSynthesisUtterance(reply);
+        window.speechSynthesis.speak(speech);
+      }, 1000);
+
+      // Restart voice recognition after AI responds
+      setTimeout(() => startSpeechToText(), 3000);
     } catch (error) {
       console.error("Error generating response:", error);
       setMessages((prev) => [
         ...prev.slice(0, -1),
         { id: 1, message: "❌ Error: Could not fetch response." },
       ]);
+      startSpeechToText();
     }
     setLoading(false);
   };
@@ -84,13 +87,10 @@ const ChatGPTClone = () => {
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message or use voice..."
+          placeholder="Speak or type your message..."
           style={styles.input}
           onKeyPress={(e) => e.key === "Enter" && handleSend()}
         />
-        <button onClick={handleVoiceInput} style={styles.voiceButton}>
-          {isRecording ? "🎙️ Stop" : "🎤 Voice"}
-        </button>
         <button onClick={handleSend} style={styles.button} disabled={loading}>
           {loading ? "Thinking..." : "Send"}
         </button>
@@ -129,6 +129,7 @@ const MarkdownRenderer = ({ text, isUser }) => {
         >
           {text}
         </ReactMarkdown>
+        <TextToSpeech text={text} />
       </div>
     </div>
   );
@@ -136,13 +137,12 @@ const MarkdownRenderer = ({ text, isUser }) => {
 
 const styles = {
   container: { width: "800px", margin: "20px auto", padding: "10px", borderRadius: "10px", border: "1px solid #ccc", backgroundColor: "#F9F9F9", display: "flex", flexDirection: "column" },
-  title: { textAlign: "center", fontSize: "20px", fontWeight: "bold", marginBottom: "10px" },
-  chatBox: { flex: 1, height: "400px", overflowY: "auto", padding: "10px", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "10px" },
-  inputContainer: { display: "flex", borderTop: "1px solid #ccc", padding: "10px" },
-  input: { flex: 1, padding: "8px", borderRadius: "5px", border: "1px solid #ccc" },
-  button: { marginLeft: "10px", padding: "8px 15px", backgroundColor: "#007BFF", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" },
-  voiceButton: { marginLeft: "10px", padding: "8px 15px", backgroundColor: "#28a745", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer" },
-  message: { padding: "8px 12px", maxWidth: "80%", fontSize: "14px", boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)" },
+  title: { textAlign: "center", fontSize: "22px", fontWeight: "bold", marginBottom: "15px", color: "#333" },
+  chatBox: { flex: 1, height: "400px", overflowY: "auto", padding: "10px", borderRadius: "10px", display: "flex", flexDirection: "column", gap: "10px", backgroundColor: "#fff" },
+  inputContainer: { display: "flex", borderTop: "1px solid #ccc", padding: "10px", gap: "10px" },
+  input: { flex: 1, padding: "10px", borderRadius: "5px", border: "1px solid #ccc", fontSize: "16px" },
+  button: { padding: "10px 15px", backgroundColor: "#007BFF", color: "#fff", border: "none", borderRadius: "5px", cursor: "pointer", fontSize: "14px" },
+  message: { padding: "10px 12px", maxWidth: "75%", fontSize: "14px", boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)", wordBreak: "break-word" },
 };
 
 export default ChatGPTClone;

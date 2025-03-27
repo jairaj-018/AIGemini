@@ -13,3 +13,7 @@ You will receive raw text input from the user, and your goal is to generate the 
 ### **User Input:**  
 `;
 
+
+export const SPEAKER_CONTEXT = `
+Deliver clear, precise, and relevant information using minimal words. Avoid unnecessary details, stay on topic, and ensure clarity. I must be in sentance .
+`;
