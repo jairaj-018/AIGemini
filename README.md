@@ -67,7 +67,18 @@ Testing the Chat Interface:
 Test the chat interface by sending various messages and verifying the responses.
 Ensure that messages from the user and AI are clearly differentiated, and the styling looks appropriate.
 
-Step 7: Deployment
+
+STEP 7: Adding Context as a Constant in the File (optional step to customise the output)
+
+To improve AI responses, define a context constant in the ChatGPTClone file and pass it as part of the prompt:
+for Exp :-
+const CONTEXT = "You are an AI assistant built for answering user queries in a professional and helpful manner. Provide clear, concise, and informative responses.";
+
+Modify the API request to include the context:
+const result = await model.generateContent(`${CONTEXT}\nUser: ${input}`);
+This ensures that AI responses remain consistent and informative.
+
+Step 8: Deployment
 Build the Application:
 
 Once you are satisfied with the local testing, you can build your application for production:
