@@ -13,3 +13,5 @@ You will receive raw text input from the user, and your goal is to generate the 
 ### **User Input:**  
 `;
 
+export const ANALYZE_RESPONSE = `You have to give a detailed version of the given answer.`;
+
