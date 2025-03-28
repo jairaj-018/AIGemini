@@ -15,6 +15,7 @@ const ChatGPTClone = () => {
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [previousResult, setPreviousResult] = useState('');
 
   const {
     isRecording,
@@ -22,7 +23,7 @@ const ChatGPTClone = () => {
     stopSpeechToText,
     interimResult,
     // results,
-  } = useSpeechToText({ continuous: false });
+  } = useSpeechToText({ continuous: true });
 
   // Update input field with spoken text
   // console.log(results,"result");
@@ -30,8 +31,10 @@ const ChatGPTClone = () => {
   useEffect(() => {
     if (interimResult) {
       // setInput(interimResult || results.join(" "));
-      setInput(interimResult);
-
+      const newText = interimResult.replace(previousResult, "").trim();
+      setInput((prevInput) => prevInput + " " + newText);
+      setPreviousResult(interimResult);
+  
     }
   }, [interimResult]);
 
