@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -10,7 +10,6 @@ import {
   DEEP_SEARCH_RESPONSE,
   WEB_SEARCH,
 } from "./aiContext";
-import React, { useState } from "react";
 import LanguageIcon from "@mui/icons-material/Language";
 import LayersIcon from "@mui/icons-material/Layers";
 import {
@@ -21,51 +20,82 @@ import {
   InputAdornment,
   Paper,
   Button,
+  CircularProgress,
+  Chip,
 } from "@mui/material";
-import {
-  Send as SendIcon,
-  Search as SearchIcon,
-  Psychology as PsychologyIcon,
-  Mic as MicIcon,
-} from "@mui/icons-material";
-
-import { CircularProgress } from "@mui/material";
+import { Send as SendIcon, Mic as MicIcon } from "@mui/icons-material";
 
 const ChatGPTClone = () => {
   const api_key = import.meta.env.VITE_API_KEY;
-
   const [messages, setMessages] = useState([
     { id: 1, message: "Hello! How can I assist you today?" },
   ]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
-  const [finalPrompt, setPrompt] = useState(`${HOTEL_CRM_CONTEXT}`);
+  const [finalPrompt, setPrompt] = useState(HOTEL_CRM_CONTEXT);
   const [selectedBtn, setSelectedBtn] = useState(false);
   const [selectedBtnWebSearch, setSelectedBtnWebSearch] = useState(false);
-  const [previousResult, setPreviousResult] = useState("");
+  const [accumulatedSpeech, setAccumulatedSpeech] = useState("");
+  const [wordsArray, setWordsArray] = useState([]);
+  const [previousResult,setPreviousResult] = useState('')
 
   const {
     isRecording,
     startSpeechToText,
     stopSpeechToText,
     interimResult,
-    // results,
-  } = useSpeechToText({ continuous: true });
+  } = useSpeechToText({ 
+    continuous: true,
+    useLegacyResults: false
+  });
+
+  // Handle speech-to-text accumulation
 
   useEffect(() => {
-    if (interimResult) {
-      const newText = interimResult.replace(previousResult, "").trim();
-      setInput((prevInput) => prevInput + " " + newText);
+    if (interimResult && interimResult !== previousResult) {
+      const newText = interimResult.slice(previousResult.length).trim();
+      setInput((prevInput) =>
+        newText ? prevInput + " " + newText : prevInput
+      );
       setPreviousResult(interimResult);
     }
   }, [interimResult]);
+  // useEffect(() => {
+  //   if (interimResult && isRecording) {
+  //     // Get only the new portion of speech
+  //     const newText = interimResult.slice(accumulatedSpeech.length);
+      
+  //     if (newText) {
+  //       // Update accumulated speech
+  //       setAccumulatedSpeech(interimResult);
+        
+  //       // Update input field by appending new text
+  //       setInput(prev => prev + newText);
+        
+  //       // Update words array
+  //       const newWords = newText.trim().split(/\s+/).filter(w => w);
+  //       setWordsArray(prev => [...prev, ...newWords]);
+  //     }
+  //   }
+  // }, [interimResult]);
 
-  // Handle voice input start/stop
   const handleVoiceInput = () => {
     if (isRecording) {
       stopSpeechToText();
     } else {
+      // Start fresh recording
+      setAccumulatedSpeech("");
+      setWordsArray([]);
       startSpeechToText();
+    }
+  };
+
+  const handleInputChange = (e) => {
+    setInput(e.target.value);
+    // Clear speech accumulation if manually typing while not recording
+    if (!isRecording) {
+      setAccumulatedSpeech("");
+      setWordsArray([]);
     }
   };
 
@@ -73,12 +103,10 @@ const ChatGPTClone = () => {
     if (!input.trim()) return;
 
     const userMessage = { id: 0, message: input };
-    setMessages([
-      ...messages,
-      userMessage,
-      { id: 1, message: "Generating..." },
-    ]);
+    setMessages(prev => [...prev, userMessage, { id: 1, message: "Generating..." }]);
     setInput("");
+    setAccumulatedSpeech("");
+    setWordsArray([]);
     setLoading(true);
 
     try {
@@ -88,35 +116,37 @@ const ChatGPTClone = () => {
 
       const updatedPrompt = `${finalPrompt} ${input}`;
       const result = await model.generateContent(updatedPrompt);
-
       const reply = result.response.text();
-      setMessages((prev) => [...prev.slice(0, -1), { id: 1, message: reply }]);
+
+      setMessages(prev => [...prev.slice(0, -1), { id: 1, message: reply }]);
     } catch (error) {
       console.error("Error generating response:", error);
-      setMessages((prev) => [
+      setMessages(prev => [
         ...prev.slice(0, -1),
         { id: 1, message: "❌ Error: Could not fetch response." },
       ]);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
-  const handleDeepSearchResponse = async () => {
-    setSelectedBtn((prev) => !prev);
-    setPrompt((prevPrompt) => {
-      return selectedBtn
-        ? prevPrompt.replace(` ${DEEP_SEARCH_RESPONSE}`, "")
-        : `${prevPrompt} ${DEEP_SEARCH_RESPONSE}`;
-    });
+  const handleKeyPress = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleSend();
+    }
   };
 
-  const handleWebSearchResponse = async () => {
-    setSelectedBtnWebSearch((prev) => !prev);
-    setPrompt((prevPrompt) => {
-      return selectedBtnWebSearch
-        ? prevPrompt.replace(` ${WEB_SEARCH}`, "")
-        : `${prevPrompt} ${WEB_SEARCH}`;
-    });
+  const handleDeepSearchResponse = () => {
+    const newSelected = !selectedBtn;
+    setSelectedBtn(newSelected);
+    setPrompt(prev => newSelected ? `${prev} ${DEEP_SEARCH_RESPONSE}` : prev.replace(` ${DEEP_SEARCH_RESPONSE}`, ""));
+  };
+
+  const handleWebSearchResponse = () => {
+    const newSelected = !selectedBtnWebSearch;
+    setSelectedBtnWebSearch(newSelected);
+    setPrompt(prev => newSelected ? `${prev} ${WEB_SEARCH}` : prev.replace(` ${WEB_SEARCH}`, ""));
   };
 
   return (
@@ -135,7 +165,6 @@ const ChatGPTClone = () => {
         <span style={{ color: "#fefe19" }}> AI</span>
       </Typography>
 
-      {/* Chat Box */}
       <Paper
         sx={{
           maxHeight: 400,
@@ -155,62 +184,86 @@ const ChatGPTClone = () => {
         ))}
       </Paper>
 
-      {/* Input Box */}
       <Box
         sx={{
           display: "flex",
-          alignItems: "center",
+          flexDirection: "column",
+          gap: 1,
           border: 1,
           borderColor: "grey.300",
           borderRadius: 5,
-          px: 2,
-          py: 1,
+          p: 2,
           boxShadow: 1,
           bgcolor: "white",
-          maxWidth: 760,
-          width: "100%",
         }}
       >
-        <TextField
-          variant="standard"
-          placeholder="How can I help?"
-          fullWidth
-          InputProps={{
-            disableUnderline: true,
-            sx: { fontSize: "16px" },
-          }}
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-        />
-        <InputAdornment position="end">
-          <IconButton
-            onClick={handleVoiceInput}
-            color={isRecording ? "success" : "warning"}
-          >
-            <MicIcon />
-          </IconButton>
-          <IconButton color="inherit" onClick={handleSend}>
-            <SendIcon />
-          </IconButton>
-        </InputAdornment>
+        <Box sx={{ display: "flex", alignItems: "center", width: "100%" }}>
+          <TextField
+            variant="standard"
+            placeholder="How can I help?"
+            fullWidth
+            multiline
+            maxRows={4}
+            InputProps={{
+              disableUnderline: true,
+              sx: { fontSize: "16px" },
+            }}
+            value={input}
+            onChange={handleInputChange}
+            onKeyPress={handleKeyPress}
+          />
+          <InputAdornment position="end">
+            <IconButton
+              onClick={handleVoiceInput}
+              color={isRecording ? "error" : "default"}
+            >
+              <MicIcon />
+            </IconButton>
+            <IconButton 
+              color="primary" 
+              onClick={handleSend}
+              disabled={loading || !input.trim()}
+            >
+              <SendIcon />
+            </IconButton>
+          </InputAdornment>
+        </Box>
+
+        {wordsArray.length > 0 && (
+          <Box sx={{ 
+            display: "flex",
+            flexWrap: "wrap",
+            gap: 1,
+            pt: 1,
+            borderTop: 1,
+            borderColor: "divider"
+          }}>
+            {wordsArray.map((word, index) => (
+              <Chip
+                key={index}
+                label={word}
+                size="small"
+                color={isRecording ? "primary" : "default"}
+                variant="outlined"
+              />
+            ))}
+          </Box>
+        )}
       </Box>
 
-      {/* Action Buttons */}
       <Box
         sx={{
           display: "flex",
           justifyContent: "flex-start",
           gap: 1,
           mt: 2,
-          maxWidth: 760,
-          width: "100%",
         }}
       >
         <Button
           variant="contained"
           color={selectedBtnWebSearch ? "primary" : "inherit"}
           size="small"
-          sx={{ borderRadius: 2, fontSize: "12px", textTransform: "none" }}
+          sx={{ borderRadius: 2, textTransform: "none" }}
           startIcon={<LanguageIcon />}
           onClick={handleWebSearchResponse}
         >
@@ -220,7 +273,7 @@ const ChatGPTClone = () => {
           variant="contained"
           color={selectedBtn ? "primary" : "inherit"}
           size="small"
-          sx={{ borderRadius: 2, fontSize: "12px", textTransform: "none" }}
+          sx={{ borderRadius: 2, textTransform: "none" }}
           startIcon={<LayersIcon />}
           onClick={handleDeepSearchResponse}
         >
@@ -232,30 +285,30 @@ const ChatGPTClone = () => {
 };
 
 const MarkdownRenderer = ({ text, isUser }) => {
-  const isGenerating =
-    text === "Generating..." || text === "Generating Analyzed Response...";
+  const isGenerating = text.startsWith("Generating");
 
   return (
-    <div
-      style={{
+    <Box
+      sx={{
         display: "flex",
         justifyContent: isUser ? "flex-end" : "flex-start",
-        marginBottom: "12px",
+        mb: 2,
       }}
     >
-      <div
-        style={{
-          ...styles.message,
-          backgroundColor: isUser ? "#e5e5e1" : "#e5e5e1",
-          alignSelf: isUser ? "flex-end" : "flex-start",
-          borderRadius: isUser ? "15px 15px 0 15px" : "15px 15px 15px 0",
+      <Paper
+        elevation={1}
+        sx={{
+          p: 2,
+          maxWidth: "80%",
+          bgcolor: isUser ? "primary.light" : "background.default",
+          borderRadius: isUser 
+            ? "18px 18px 0 18px" 
+            : "18px 18px 18px 0",
         }}
       >
         {isGenerating ? (
           <Box display="flex" alignItems="center" gap={1}>
-            <Typography variant="body2" color="textSecondary">
-              Generating response...
-            </Typography>
+            <Typography variant="body2">{text}</Typography>
             <CircularProgress size={20} />
           </Box>
         ) : (
@@ -273,13 +326,7 @@ const MarkdownRenderer = ({ text, isUser }) => {
                     {String(children).replace(/\n$/, "")}
                   </SyntaxHighlighter>
                 ) : (
-                  <code
-                    style={{
-                      backgroundColor: "#F5F5F5",
-                      padding: "2px 4px",
-                      borderRadius: "4px",
-                    }}
-                  >
+                  <code className={className}>
                     {children}
                   </code>
                 );
@@ -289,78 +336,12 @@ const MarkdownRenderer = ({ text, isUser }) => {
             {text}
           </ReactMarkdown>
         )}
-
         {!isGenerating && !isUser && (
           <TextToSpeech text={text} stopBtn={false} />
         )}
-      </div>
-    </div>
+      </Paper>
+    </Box>
   );
-};
-
-const styles = {
-  container: {
-    width: "800px",
-    margin: "20px auto",
-    padding: "10px",
-    borderRadius: "10px",
-    border: "1px solid #ccc",
-    backgroundColor: "#F9F9F9",
-    display: "flex",
-    flexDirection: "column",
-  },
-  title: {
-    textAlign: "center",
-    fontSize: "20px",
-    fontWeight: "bold",
-    marginBottom: "10px",
-  },
-  chatBox: {
-    flex: 1,
-    height: "400px",
-    overflowY: "auto",
-    padding: "10px",
-    borderRadius: "10px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-  },
-  inputContainer: {
-    display: "flex",
-    // borderTop: "1px solid #ccc",
-    padding: "10px",
-  },
-  input: {
-    flex: 1,
-    padding: "8px",
-    borderRadius: "5px",
-    border: "1px solid #ccc",
-  },
-  button: {
-    marginLeft: "10px",
-    marginTop: "10px",
-    padding: "8px 15px",
-    backgroundColor: "#007BFF",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-  },
-  voiceButton: {
-    marginLeft: "10px",
-    padding: "8px 15px",
-    backgroundColor: "#28a745",
-    color: "#fff",
-    border: "none",
-    borderRadius: "5px",
-    cursor: "pointer",
-  },
-  message: {
-    padding: "8px 12px",
-    maxWidth: "80%",
-    fontSize: "14px",
-    boxShadow: "0px 2px 5px rgba(0, 0, 0, 0.1)",
-  },
 };
 
 export default ChatGPTClone;
