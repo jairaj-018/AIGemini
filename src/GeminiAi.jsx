@@ -303,7 +303,7 @@ const MarkdownRenderer = ({ text, isUser }) => {
           </ReactMarkdown>
         )}
 
-        {!isGenerating && !isUser && <TextToSpeech text={text} stopBtn={false} />}
+        {!isGenerating && !isUser && <TextToSpeech text={text}/>}
       </div>
     </div>
   );
