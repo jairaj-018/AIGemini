@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { Light as SyntaxHighlighter } from "react-syntax-highlighter";
@@ -33,6 +33,7 @@ import { CircularProgress } from "@mui/material";
 
 const ChatGPTClone = () => {
   const api_key = import.meta.env.VITE_API_KEY;
+  const chatContainerRef = useRef(null);
 
   const [messages, setMessages] = useState([
     { id: 1, message: "Hello! How can I assist you today?" },
@@ -52,15 +53,6 @@ const ChatGPTClone = () => {
     // results,
   } = useSpeechToText({ continuous: true });
 
-  // useEffect(() => {
-  //   if (interimResult) {
-  //     const newText = interimResult.replace(previousResult, "").trim();
-  //     setInput((prevInput) => prevInput + " " + newText);
-  //     setPreviousResult(interimResult);
-  //     console.log("interimResult : ====>",interimResult);
-  //   }
-  // }, [interimResult]);
-
   useEffect(() => {
     if (interimResult && interimResult !== previousResult) {
       const newText = interimResult.slice(previousResult.length).trim();
@@ -70,6 +62,14 @@ const ChatGPTClone = () => {
       setPreviousResult(interimResult);
     }
   }, [interimResult]);
+
+  // Auto-scroll to the latest message
+  useEffect(() => {
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTop =
+        chatContainerRef.current.scrollHeight;
+    }
+  }, [messages]);
 
   // Handle voice input start/stop
   const handleVoiceInput = () => {
@@ -96,8 +96,6 @@ const ChatGPTClone = () => {
       const { GoogleGenerativeAI } = await import("@google/generative-ai");
       const genAI = new GoogleGenerativeAI(api_key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
-
-      console.log("input :", input);
 
       const updatedPrompt = `${finalPrompt} ${input}`;
       const result = await model.generateContent(updatedPrompt);
@@ -141,6 +139,7 @@ const ChatGPTClone = () => {
         bgcolor: "background.paper",
         borderRadius: 2,
         boxShadow: 3,
+        height: 520,
       }}
     >
       <Typography variant="h5" align="center" fontWeight="bold" mb={2}>
@@ -150,8 +149,9 @@ const ChatGPTClone = () => {
 
       {/* Chat Box */}
       <Paper
+        ref={chatContainerRef}
         sx={{
-          maxHeight: 400,
+          height: 330,
           overflowY: "auto",
           bgcolor: "grey.100",
           p: 2,
@@ -303,7 +303,11 @@ const MarkdownRenderer = ({ text, isUser }) => {
           </ReactMarkdown>
         )}
 
-        {!isGenerating && !isUser && <TextToSpeech text={text}/>}
+        {!isGenerating && !isUser && (
+          <div style={{ cursor: "pointer" }}>
+            <TextToSpeech text={text} />
+          </div>
+        )}
       </div>
     </div>
   );
