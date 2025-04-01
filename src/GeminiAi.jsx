@@ -37,11 +37,12 @@ const ChatGPTClone = () => {
   const [messages, setMessages] = useState([
     { id: 1, message: "Hello! How can I assist you today?" },
   ]);
-  const [input, setInput] = useState(null);
+  const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [finalPrompt, setPrompt] = useState(`${HOTEL_CRM_CONTEXT}`);
   const [selectedBtn, setSelectedBtn] = useState(false);
   const [selectedBtnWebSearch, setSelectedBtnWebSearch] = useState(false);
+  const [previousResult, setPreviousResult] = useState("");
 
   const {
     isRecording,
@@ -98,7 +99,6 @@ const ChatGPTClone = () => {
       ]);
     }
     setLoading(false);
-    setInput(null);
   };
 
   const handleDeepSearchResponse = async () => {
