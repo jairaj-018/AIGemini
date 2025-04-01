@@ -43,11 +43,19 @@ const ChatGPTClone = () => {
   const [selectedBtn, setSelectedBtn] = useState(false);
   const [selectedBtnWebSearch, setSelectedBtnWebSearch] = useState(false);
 
-  const { isRecording, startSpeechToText, stopSpeechToText, interimResult } =
-    useSpeechToText({ continuous: false });
+  const {
+    isRecording,
+    startSpeechToText,
+    stopSpeechToText,
+    interimResult,
+    // results,
+  } = useSpeechToText({ continuous: true });
+
   useEffect(() => {
     if (interimResult) {
-      setInput(interimResult);
+      const newText = interimResult.replace(previousResult, "").trim();
+      setInput((prevInput) => prevInput + " " + newText);
+      setPreviousResult(interimResult);
     }
   }, [interimResult]);
 
@@ -124,7 +132,7 @@ const ChatGPTClone = () => {
     >
       <Typography variant="h5" align="center" fontWeight="bold" mb={2}>
         <span style={{ color: "#1565C0" }}>Samyotech</span>
-        <span style={{ color: "#fefe19" }}> AI</span> 
+        <span style={{ color: "#fefe19" }}> AI</span>
       </Typography>
 
       {/* Chat Box */}
