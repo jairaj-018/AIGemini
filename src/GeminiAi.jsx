@@ -52,10 +52,21 @@ const ChatGPTClone = () => {
     // results,
   } = useSpeechToText({ continuous: true });
 
+  // useEffect(() => {
+  //   if (interimResult) {
+  //     const newText = interimResult.replace(previousResult, "").trim();
+  //     setInput((prevInput) => prevInput + " " + newText);
+  //     setPreviousResult(interimResult);
+  //     console.log("interimResult : ====>",interimResult);
+  //   }
+  // }, [interimResult]);
+
   useEffect(() => {
-    if (interimResult) {
-      const newText = interimResult.replace(previousResult, "").trim();
-      setInput((prevInput) => prevInput + " " + newText);
+    if (interimResult && interimResult !== previousResult) {
+      const newText = interimResult.slice(previousResult.length).trim();
+      setInput((prevInput) =>
+        newText ? prevInput + " " + newText : prevInput
+      );
       setPreviousResult(interimResult);
     }
   }, [interimResult]);
@@ -85,6 +96,8 @@ const ChatGPTClone = () => {
       const { GoogleGenerativeAI } = await import("@google/generative-ai");
       const genAI = new GoogleGenerativeAI(api_key);
       const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
+
+      console.log("input :", input);
 
       const updatedPrompt = `${finalPrompt} ${input}`;
       const result = await model.generateContent(updatedPrompt);
@@ -290,9 +303,7 @@ const MarkdownRenderer = ({ text, isUser }) => {
           </ReactMarkdown>
         )}
 
-        {!isGenerating && !isUser && (
-          <TextToSpeech text={text} stopBtn={false} />
-        )}
+        {!isGenerating && !isUser && <TextToSpeech text={text}/>}
       </div>
     </div>
   );
